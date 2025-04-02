@@ -5,9 +5,10 @@ STATE_INCREMENT = 50
 STATE_VALUES = [i * STATE_INCREMENT for i in range(37)]
 transition_matrix = np.loadtxt('markov_chain_transition_matrix_multiples_of_50.csv', delimiter=',', skiprows=1, usecols=range(1, 38))
 NUM_DAYS = 10000
-COST_HOLDING_PER_FT3 = 0.005
+COST_HOLDING_PER_FT3 = 0.0528  # Based on c = 10% of k
 K1, K2 = 500, 750
-k_per_ft3 = 527.56 / 1000  # Convert from $/m³ to $/ft³ ≈ 0.52756
+k_per_m3 = 18.64
+k_per_ft3 = k_per_m3 / 35.3147 # Conversion factor from m³ to ft³
 fixed_3pl_cost = 800
 
 np.random.seed(42)
