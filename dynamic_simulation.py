@@ -32,7 +32,7 @@ def simulate_policy(threshold, logistics_mode):
                     total_shipping += K2
             elif logistics_mode == '3pl':
                 m3 = inventory * 0.0283168  # ft³ to m³
-                total_shipping += fixed_3pl_cost + (k_per_ft3 * inventory)
+                total_shipping += fixed_3pl_cost + (k_per_m3 * m3)
 
             current_state_index = 0
             num_shipments += 1
