@@ -26,7 +26,10 @@ def simulate_policy(threshold, logistics_mode):
         if inventory >= threshold:
             # Shipping cost logic
             if logistics_mode == 'truck':
-                total_shipping += K1 if threshold == 900 else K2
+                if inventory<=900:
+                    total_shipping += K1
+                else:
+                    total_shipping += K2
             elif logistics_mode == '3pl':
                 m3 = inventory * 0.0283168  # ft³ to m³
                 total_shipping += fixed_3pl_cost + (k_per_ft3 * inventory)
