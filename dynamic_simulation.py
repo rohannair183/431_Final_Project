@@ -5,9 +5,9 @@ STATE_INCREMENT = 50
 STATE_VALUES = [i * STATE_INCREMENT for i in range(37)]
 transition_matrix = np.loadtxt('markov_chain_transition_matrix_multiples_of_50.csv', delimiter=',', skiprows=1, usecols=range(1, 38))
 NUM_DAYS = 10000
-COST_HOLDING_PER_FT3 = 0.0528  # Based on c = 10% of k
+COST_HOLDING_PER_FT3 = 1.5  # Based on c = 10% of k
 K1, K2 = 500, 750
-k_per_m3 = 18.64
+k_per_m3 = 15
 k_per_ft3 = k_per_m3 / 35.3147 # Conversion factor from m³ to ft³
 fixed_3pl_cost = 800
 
@@ -34,7 +34,7 @@ def simulate_policy(threshold, logistics_mode):
                 m3 = inventory * 0.0283168  # ft³ to m³
                 total_shipping += fixed_3pl_cost + (k_per_m3 * m3)
 
-            current_state_index = 0
+            current_state_index = 0 #iInventory resets to 0
             num_shipments += 1
             continue
 
