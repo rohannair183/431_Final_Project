@@ -1,5 +1,7 @@
 import numpy as np
-
+import create_threshold_matrix as ct
+from time import sleep
+import pandas as pd
 # Parameters
 STATE_INCREMENT = 50
 STATE_VALUES = [i * STATE_INCREMENT for i in range(37)]
@@ -13,7 +15,7 @@ fixed_3pl_cost = 800
 
 np.random.seed(42)
 
-def simulate_policy(threshold, logistics_mode):
+def simulate_policy(threshold, logistics_mode, transition_matrix=transition_matrix):
     current_state_index = 0
     total_holding = 0
     total_shipping = 0
@@ -48,13 +50,17 @@ def simulate_policy(threshold, logistics_mode):
     return avg_cost, freq
 
 # Try multiple thresholds
-thresholds = list(range(300, 1801, 50))  # Reasonable steps
+thresholds = list(range(300, 501, 50))  # Reasonable steps
 results = []
 
 print("Running dynamic policy simulations...\n")
+
 for threshold in thresholds:
-    cost_truck, freq_truck = simulate_policy(threshold, 'truck')
-    cost_3pl, freq_3pl = simulate_policy(threshold, '3pl')
+    ct.create_transition_matrix(threshold, output_file=f'Threshold_Matrices/transition_matrix_{threshold}.csv')
+    # Load the transition matrix for the current threshold
+    threshold_matrix = np.loadtxt(f'Threshold_Matrices/transition_matrix_{threshold}.csv', delimiter=',', skiprows=1, usecols=range(1, 38))
+    cost_truck, freq_truck = simulate_policy(threshold, 'truck', threshold_matrix)
+    cost_3pl, freq_3pl = simulate_policy(threshold, '3pl', threshold_matrix)
     results.append({
         'Threshold': threshold,
         'Truck_Cost_per_Day': round(cost_truck, 2),
