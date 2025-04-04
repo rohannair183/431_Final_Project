@@ -53,7 +53,7 @@ def simulate_policy(threshold, logistics_mode, transition_matrix=transition_matr
 
 
 # Try multiple thresholds
-thresholds = list(range(300, 501, 50))  # Reasonable steps
+thresholds = list(range(300, 1801, 50))  # Reasonable steps
 results = []
 
 print("Running dynamic policy simulations...\n")
