@@ -136,8 +136,8 @@ def create_transition_matrix(threshold, output_file="transition_matrix.csv"):
     return P  # Return matrix for further use if needed
 
 # Example usage
-threshold = 700
-matrix = create_transition_matrix(threshold, "transition_matrix_700.csv")
+# threshold = 300
+# matrix = create_transition_matrix(threshold, "transition_matrix_300.csv")
 
 # # Test with a larger threshold
 # threshold = 1800
