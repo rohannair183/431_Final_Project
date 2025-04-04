@@ -78,24 +78,46 @@ def create_transition_matrix(threshold, output_file="transition_matrix.csv"):
         P[i, i] = p_orders[0]
         # 1 order
         for v, prob in vol_1.items():
-            next_inventory = current_inventory + v
+            if current_inventory + v >= threshold:
+                P[i, 0] += p_orders[1] * prob
+            else:
+                # Calculate next state index
+                next_inventory = current_inventory + v
+                next_idx = int(next_inventory // 50)
+                P[i, next_idx] += p_orders[1] * prob
+            # next_inventory = current_inventory + v
             
-            next_idx = int(next_inventory // 50)
-            P[i, next_idx] += p_orders[1] * prob
+            # next_idx = int(next_inventory // 50)
+            # P[i, next_idx] += p_orders[1] * prob
     
         # 2 orders
         for v, prob in vol_2.items():
-            next_inventory = current_inventory + v
+            if current_inventory + v >= threshold:
+                P[i, 0] += p_orders[2] * prob
+            else:
+                # Calculate next state index
+                next_inventory = current_inventory + v
+                next_idx = int(next_inventory // 50)
+                P[i, next_idx] += p_orders[2] * prob
             
-            next_idx = int(next_inventory // 50)
-            P[i, next_idx] += p_orders[2] * prob
+            # next_inventory = current_inventory + v
+            
+            # next_idx = int(next_inventory // 50)
+            # P[i, next_idx] += p_orders[2] * prob
         
         # 3 orders
         for v, prob in vol_3.items():
-            next_inventory = current_inventory + v
+            if current_inventory + v >= threshold:
+                P[i, 0] += p_orders[3] * prob
+            else:
+                # Calculate next state index
+                next_inventory = current_inventory + v
+                next_idx = int(next_inventory // 50)
+                P[i, next_idx] += p_orders[3] * prob
+            # next_inventory = current_inventory + v
             
-            next_idx = int(next_inventory // 50)
-            P[i, next_idx] += p_orders[3] * prob
+            # next_idx = int(next_inventory // 50)
+            # P[i, next_idx] += p_orders[3] * prob
     
     # Ensure rows sum to 1 (correct for rounding errors)
     row_sums = P.sum(axis=1)
@@ -114,8 +136,8 @@ def create_transition_matrix(threshold, output_file="transition_matrix.csv"):
     return P  # Return matrix for further use if needed
 
 # Example usage
-# threshold = 200
-# matrix = create_transition_matrix(threshold, "transition_matrix_200.csv")
+threshold = 700
+matrix = create_transition_matrix(threshold, "transition_matrix_700.csv")
 
 # # Test with a larger threshold
 # threshold = 1800
