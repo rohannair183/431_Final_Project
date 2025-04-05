@@ -13,6 +13,8 @@ pl_costs = []
 for threshold in thresholds:
     truck_costs.append(gcm.compute_total_cost_truck_method(threshold))
     pl_costs.append(gcm.compute_total_cost_3pl_method(threshold))
+print("Truck Costs:", truck_costs)
+print("3PL Costs:", pl_costs)
 
 # Create DataFrame for plotting
 data = pd.DataFrame({

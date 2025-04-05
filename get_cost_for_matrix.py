@@ -1,7 +1,15 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import poisson
-
+import create_threshold_matrix as cvp
+import itertools
+from itertools import product
+# Calculate volume probabilities for orders
+volume_probabilities = {}
+for i in range(1, 4):
+    # Calculate volume probabilities for the current order
+    volume_probabilities[i] = cvp.compute_volume_probabilities(i)
+    print(f"Volume probabilities for {i} orders: {volume_probabilities[i]}")
 def compute_steady_state_from_csv(csv_file, output_file="steady_state_probabilities.csv"):
     # Read the transition matrix from CSV
     df = pd.read_csv(csv_file, index_col=0)  # First column is index (states)
@@ -70,8 +78,8 @@ def calculate_holding_cost(steady_state_csv, threshold, holding_cost_per_unit):
     cycle_length = threshold / (orders_per_day * volume_per_order)
     total_holding_cost = total_holding_cost_per_day * cycle_length
 
-    # print(f"\nTotal Expected Holding Cost per Day: {total_holding_cost:.6f}")
-    return total_holding_cost
+    print(f"\nTotal Expected Holding Cost per Day: {total_holding_cost/cycle_length:.6f}")
+    return total_holding_cost_per_day
 
 def compute_truck_cost(steady_state_csv, threshold, truck_1_cost, truck_2_cost, truck_1_capacity=900, truck_2_capacity=1800):
     # Read the steady-state probabilities from CSV
@@ -83,22 +91,34 @@ def compute_truck_cost(steady_state_csv, threshold, truck_1_cost, truck_2_cost, 
         raise ValueError(f"Expected 37 states, got {len(pi)}")
     
     # Define states (inventory levels)
-    states = np.arange(0, 1850, 50)  # 0, 50, 100, ..., 1800
-    
-    cost = 0
-    for state in states:
-        lower = threshold - state
-        upper = truck_1_capacity - state
+    states = np.arange(threshold-450, threshold-49, 50)
+    possible_orders = np.arange(50, 451, 50)  # 0, 50, 100, ..., 450
+    print(f"States: {states}")
+    print(f"Orders: {possible_orders}")
+    p_orders = poisson.pmf([0, 1, 2, 3], 2)
+    p_orders[3] = 1 - sum(p_orders[:3])  # Adjust P(N=3) for cap
 
-        if lower <= state and upper >= state:
-            truck_cost = truck_1_cost
-        elif lower < state and upper < state:
-            truck_cost = truck_2_cost
-        else:
-            truck_cost = 0
-        cost += pi[int(state / 50)] * truck_cost
-    # print(f"\nTotal Expected Truck Cost per Day: {cost:.6f}")
-    return cost
+    cost = 0
+
+    for state in states:
+        for posible_order in possible_orders:
+            if state + posible_order >= threshold:
+                # Calculate the cost based on the truck capacity
+                if state <= truck_1_capacity:
+                    truck_cost = truck_1_cost
+                elif state <= truck_2_capacity:
+                    truck_cost = truck_2_cost
+                else:
+                    truck_cost = 0
+                # Calculate the expected cost
+                cost += (pi[int(state / 50)] * state + posible_order * (volume_probabilities[1].get(posible_order, 0) * p_orders[1] + volume_probabilities[2].get(posible_order, 0) * p_orders[2] + volume_probabilities[3].get(posible_order, 0) * p_orders[3])) * truck_cost
+    
+    
+    orders_per_day = (1 * p_orders[1] + 2 * p_orders[2] + 3 * p_orders[3])
+    volume_per_order = 0.3 * 50 + 0.5 * 100 + 0.2 * 150
+    cycle_length = threshold / (orders_per_day * volume_per_order)
+    cost_per_day = cost / cycle_length
+    return cost_per_day
 
 def variable_3pl_shipping_cost(steady_state_csv, variable_shipment_cost, threshold):
     # Read the steady-state probabilities from CSV
@@ -107,15 +127,33 @@ def variable_3pl_shipping_cost(steady_state_csv, variable_shipment_cost, thresho
     # Verify length
     if len(pi) != 37:
         raise ValueError(f"Expected 37 states, got {len(pi)}")
+        
     # Define states (inventory levels)
-    states = np.arange(0, 1850, 50)  # 0, 50, 100, ..., 1800
+    states = np.arange(threshold-450, threshold-49, 50)
+    print(f"States: {states}")
+    orders = np.arange(50, 451, 50)  # 0, 50, 100, ..., 450
+    print(f"Orders: {orders}")
+        
     cost = 0
+    p_orders = poisson.pmf([0, 1, 2, 3], 2)
+    p_orders[3] = 1 - sum(p_orders[:3])  # Adjust P(N=3) for cap
     # Calculate variable shipping cost: pi * state * variable_shipment_cost
-    for state in states:
-        if state >= threshold:
-            cost += variable_shipment_cost * state * pi[int(state / 50)]
-    # print(f"\nTotal Expected Variable Shipping Cost per Day: {cost:.6f}")
-    return cost
+    for i in range(len(states)):
+        state = states[i]
+        for j in range(len(orders)):
+            order = orders[j]
+            if state + order >= threshold:
+                # print(f"probability of {order}: {volume_probabilities[1].get(order, 0) + volume_probabilities[2].get(order, 0) + volume_probabilities[3].get(order, 0)}")
+                # print(pi[int(state // 50)], state, order)
+                cost += ((pi[int(state // 50)]*state) + order * (volume_probabilities[1].get(order, 0) * p_orders[1] + volume_probabilities[2].get(order, 0) * p_orders[2] + volume_probabilities[3].get(order, 0) * p_orders[3])) * variable_shipment_cost
+                print(pi[int(state // 50)], state, order)
+    print(f"\nTotal Expected Variable Shipping Cost per Day: {cost:.6f}")
+    
+    orders_per_day = (1 * p_orders[1] + 2 * p_orders[2] + 3 * p_orders[3])
+    volume_per_order = 0.3 * 50 + 0.5 * 100 + 0.2 * 150
+    cycle_length = threshold / (orders_per_day * volume_per_order)
+    print(f"cost per cycle {cost / cycle_length}")
+    return cost / cycle_length
 
 def compute_total_cost_truck_method(threshold):
     # Example truck costs
@@ -134,25 +172,30 @@ def compute_total_cost_truck_method(threshold):
     return total_cost
 
 def compute_total_cost_3pl_method(threshold):
-    fixed_shipment_cost = 800
-    variable_shipment_cost = 15/35.315  # Example variable shipment cost in $/ft³
-    holding_cost_per_unit = 1.5/35.315  # Example holding cost per unit
+    p_orders = poisson.pmf([0, 1, 2, 3], 2)
+    p_orders[3] = 1 - sum(p_orders[:3])  # Adjust P(N=3) for cap
+    orders_per_day = (1 * p_orders[1] + 2 * p_orders[2] + 3 * p_orders[3])
+    volume_per_order = 0.3 * 50 + 0.5 * 100 + 0.2 * 150
+    cycle_length = threshold / (orders_per_day * volume_per_order)
+    fixed_shipment_cost = 800 / cycle_length  # Example fixed shipment cost in $/day
+    variable_shipment_cost = 15 * 35.3147  # Example variable shipment cost in $/ft³
+    holding_cost_per_unit = 1.5 * 35.3147  # Example holding cost per unit
 
     # Compute the holding cost
     holding_cost = calculate_holding_cost(f"Threshold_Matrix_Steady_States/steady_state_{threshold}.csv", threshold, holding_cost_per_unit)
     # print(f"\nTotal Expected Holding Cost per Day 3PL: {holding_cost:.6f}")
 
     # Compute the truck cost
-    variable_cost = variable_3pl_shipping_cost(f"Threshold_Matrix_Steady_States/steady_state_{threshold}.csv", variable_shipment_cost, threshold=threshold)
+    variable_cost = variable_3pl_shipping_cost(f"Threshold_Matrix_Steady_States/steady_state_{threshold}.csv", variable_shipment_cost, threshold)
     
     total_cost = holding_cost + variable_cost + fixed_shipment_cost
 
 
-    print(f"\nTotal Expected Cost per Day 3PL: {total_cost:.6f}")
+    print(f"\nTotal Expected Cost per Cycle 3PL: {total_cost:.6f}")
     return total_cost
 
 compute_total_cost_truck_method(900) # Example threshold
-compute_total_cost_3pl_method(900) # Example threshold
+# compute_total_cost_3pl_method(900) # Example threshold
 
 # Example usage
 # steady_state_csv = "Threshold_Matrix_Steady_States/steady_state_800.csv"  # Replace with your actual file
